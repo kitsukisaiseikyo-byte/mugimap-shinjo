@@ -6,6 +6,9 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch: # 手動実行も可能
 
+permissions:
+  contents: write
+  
 jobs:
   update-maps:
     runs-on: ubuntu-latest
