@@ -29,7 +29,13 @@ jobs:
         GEE_PRIVATE_KEY: ${{ secrets.GEE_PRIVATE_KEY }}
       run: |
         echo "$GEE_PRIVATE_KEY" > private-key.json
-        earthengine authenticate --authorization-code=$(echo "$GEE_SERVICE_ACCOUNT")
+        python - <<EOF
+        import ee
+        service_account = "${{ secrets.GEE_SERVICE_ACCOUNT }}"
+        credentials = ee.ServiceAccountCredentials(service_account, 'private-key.json')
+        ee.Initialize(credentials)
+        print("✅ GEE 認証成功")
+        EOF
         
     - name: 前回処理日取得
       id: last_date
