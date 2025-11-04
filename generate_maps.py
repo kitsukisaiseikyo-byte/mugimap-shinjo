@@ -35,7 +35,7 @@ print("="*70)
 
 # ===== 設定 =====
 FIELD_ASSET = 'projects/ee-kitsukisaiseikyo/assets/2025442101'
-TARGET_FIELDS_PATH = 'data/新庄麦筆リスト.xlsx'
+TARGET_FIELDS_PATH = '新庄麦筆リスト.xlsx'
 OUTPUT_DIR = 'output'
 STATE_FILE = 'last_processed.txt'
 
