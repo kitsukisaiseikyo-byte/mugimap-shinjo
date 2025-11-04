@@ -1,0 +1,77 @@
+name: 麦生育マップ自動更新
+
+on:
+  schedule:
+    # 毎日午前2時(JST 11時)に実行
+    - cron: '0 2 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  update-maps:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v3
+      
+    - name: Python環境セットアップ
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: 依存関係インストール
+      run: |
+        pip install earthengine-api pandas openpyxl folium numpy
+        
+    - name: GEE認証設定
+      env:
+        GEE_SERVICE_ACCOUNT: ${{ secrets.GEE_SERVICE_ACCOUNT }}
+        GEE_PRIVATE_KEY: ${{ secrets.GEE_PRIVATE_KEY }}
+      run: |
+        echo "$GEE_PRIVATE_KEY" > private-key.json
+        earthengine authenticate --authorization-code=$(echo "$GEE_SERVICE_ACCOUNT")
+        
+    - name: 前回処理日取得
+      id: last_date
+      run: |
+        if [ -f last_processed.txt ]; then
+          echo "date=$(cat last_processed.txt)" >> $GITHUB_OUTPUT
+        else
+          echo "date=2024-12-01" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: 新規画像チェック&マップ生成
+      run: |
+        python generate_maps.py --last-date ${{ steps.last_date.outputs.date }}
+        
+    - name: 変更確認
+      id: check_changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: 変更をコミット
+      if: steps.check_changes.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "🌾 麦生育マップ自動更新 $(date +'%Y-%m-%d %H:%M')"
+        git push
+        
+    - name: GitHub Pagesにデプロイ
+      if: steps.check_changes.outputs.changed == 'true'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./output
+        publish_branch: gh-pages
+        
+    - name: 通知 (オプション)
+      if: steps.check_changes.outputs.changed == 'true'
+      run: |
+        echo "新しい画像が処理されました！"
+        echo "マップURL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
