@@ -1,6 +1,6 @@
 """
 麦生育マップ - GitHub Actions自動更新版
-新規Sentinel-2画像を検出して自動でマップ更新
+NDVI、NDWI、GNDVI の3つのマップを作成
 """
 
 import ee
@@ -30,7 +30,7 @@ except Exception as e:
     exit(1)
 
 print("="*70)
-print("麦生育マップ - 自動更新版")
+print("麦生育マップ - NDVI/NDWI/GNDVI版")
 print("="*70)
 
 # ===== 設定 =====
@@ -68,13 +68,16 @@ def mask_s2_clouds(image):
     return image.updateMask(mask).divide(10000)
 
 def add_indices(image):
+    # NDVI: (NIR - Red) / (NIR + Red)
     ndvi = image.normalizedDifference(['B8', 'B4']).rename('NDVI')
-    evi = image.expression(
-        '2.5*((NIR-RED)/(NIR+6*RED-7.5*BLUE+1))',
-        {'NIR': image.select('B8'), 'RED': image.select('B4'), 'BLUE': image.select('B2')}
-    ).rename('EVI')
-    lai = ndvi.multiply(-1).add(1).log().divide(-0.5).rename('LAI')
-    return image.addBands([ndvi, evi, lai])
+    
+    # NDWI: (NIR - SWIR) / (NIR + SWIR) - 水分ストレス指標
+    ndwi = image.normalizedDifference(['B8', 'B11']).rename('NDWI')
+    
+    # GNDVI: (NIR - Green) / (NIR + Green) - クロロフィル含量指標
+    gndvi = image.normalizedDifference(['B8', 'B3']).rename('GNDVI')
+    
+    return image.addBands([ndvi, ndwi, gndvi])
 
 # 前回処理日以降の新規画像のみ取得
 s2_collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
@@ -145,20 +148,8 @@ center_lat = sum([c[1] for c in coords]) / len(coords)
 print(f"  ✓ マップ中心: ({center_lat:.4f}, {center_lon:.4f})")
 
 # ===== カラーマップ関数 =====
-def get_lai_color(lai):
-    if lai is None or np.isnan(lai):
-        return '#808080'
-    if lai < 0.5:
-        return '#d73027'
-    if lai < 1.0:
-        return '#fc8d59'
-    if lai < 2.0:
-        return '#fee08b'
-    if lai < 3.0:
-        return '#91cf60'
-    return '#1a9850'
-
 def get_ndvi_color(ndvi):
+    """NDVI用カラーマップ（植生活性度）"""
     if ndvi is None or np.isnan(ndvi):
         return '#808080'
     if ndvi < 0.2:
@@ -171,11 +162,40 @@ def get_ndvi_color(ndvi):
         return '#91cf60'
     return '#1a9850'
 
-# ===== 既存マップ読み込みまたは新規作成 =====
+def get_ndwi_color(ndwi):
+    """NDWI用カラーマップ（水分状態）"""
+    if ndwi is None or np.isnan(ndwi):
+        return '#808080'
+    if ndwi < -0.3:
+        return '#8B4513'  # 茶色：乾燥
+    if ndwi < -0.1:
+        return '#D2691E'  # オレンジ茶：やや乾燥
+    if ndwi < 0.1:
+        return '#F4A460'  # サンディブラウン：適度
+    if ndwi < 0.3:
+        return '#87CEEB'  # スカイブルー：湿潤
+    return '#4169E1'  # ロイヤルブルー：多湿
+
+def get_gndvi_color(gndvi):
+    """GNDVI用カラーマップ（クロロフィル含量）"""
+    if gndvi is None or np.isnan(gndvi):
+        return '#808080'
+    if gndvi < 0.2:
+        return '#FFFF00'  # 黄色：低
+    if gndvi < 0.4:
+        return '#9ACD32'  # イエローグリーン：やや低
+    if gndvi < 0.6:
+        return '#32CD32'  # ライムグリーン：中
+    if gndvi < 0.8:
+        return '#228B22'  # フォレストグリーン：高
+    return '#006400'  # ダークグリーン：非常に高
+
+# ===== マップ初期化 =====
 print("\n[6] マップ初期化中...")
 
-m_lai = folium.Map(location=[center_lat, center_lon], zoom_start=15, tiles='OpenStreetMap')
 m_ndvi = folium.Map(location=[center_lat, center_lon], zoom_start=15, tiles='OpenStreetMap')
+m_ndwi = folium.Map(location=[center_lat, center_lon], zoom_start=15, tiles='OpenStreetMap')
+m_gndvi = folium.Map(location=[center_lat, center_lon], zoom_start=15, tiles='OpenStreetMap')
 
 # ===== 新規日付のレイヤー追加 =====
 print("\n[7] 新規日付処理中...")
@@ -186,9 +206,10 @@ for date_idx, date in enumerate(new_dates):
     target_index = history['date_to_index'][date]
     target_image = s2_collection.filter(ee.Filter.eq('system:index', target_index)).first()
     
-    # LAIレイヤー
-    layer_lai = FeatureGroup(name=f'LAI_{date}', show=(date == new_dates[-1]))
+    # 各指標のレイヤー作成
     layer_ndvi = FeatureGroup(name=f'NDVI_{date}', show=(date == new_dates[-1]))
+    layer_ndwi = FeatureGroup(name=f'NDWI_{date}', show=(date == new_dates[-1]))
+    layer_gndvi = FeatureGroup(name=f'GNDVI_{date}', show=(date == new_dates[-1]))
     
     date_pixels = 0
     
@@ -205,54 +226,21 @@ for date_idx, date in enumerate(new_dates):
         field_geom = ee.Geometry.Polygon(feature['geometry']['coordinates'])
         
         try:
-            # LAIサンプリング
-            sample_lai = target_image.select(['LAI']).sample(
+            # 3つの指標をまとめてサンプリング
+            sample_data = target_image.select(['NDVI', 'NDWI', 'GNDVI']).sample(
                 region=field_geom,
                 scale=PIXEL_SCALE,
                 geometries=True
             ).getInfo()
             
-            # NDVIサンプリング
-            sample_ndvi = target_image.select(['NDVI']).sample(
-                region=field_geom,
-                scale=PIXEL_SCALE,
-                geometries=True
-            ).getInfo()
-            
-            if 'features' not in sample_lai or 'features' not in sample_ndvi:
+            if 'features' not in sample_data:
                 print(" データなし")
                 continue
             
-            pixel_count = len(sample_lai['features'])
+            pixel_count = len(sample_data['features'])
             
-            # LAIピクセル追加
-            for pixel_feature in sample_lai['features']:
-                geom = pixel_feature.get('geometry', {})
-                props = pixel_feature.get('properties', {})
-                if not geom or not props:
-                    continue
-                
-                lon, lat = geom['coordinates']
-                lai = props.get('LAI')
-                
-                half_size = PIXEL_SCALE / 2 / 111320
-                bounds = [[lat - half_size, lon - half_size], [lat + half_size, lon + half_size]]
-                
-                lai_str = f"{lai:.2f}" if lai is not None and not np.isnan(lai) else 'N/A'
-                
-                folium.Rectangle(
-                    bounds=bounds,
-                    color=get_lai_color(lai),
-                    fill=True,
-                    fillColor=get_lai_color(lai),
-                    fillOpacity=0.8,
-                    weight=0.5,
-                    popup=f"<b>{address}</b><br>日付: {date}<br>LAI: {lai_str}",
-                    tooltip=f"{date}: LAI {lai_str}"
-                ).add_to(layer_lai)
-            
-            # NDVIピクセル追加
-            for pixel_feature in sample_ndvi['features']:
+            # 各ピクセルを3つのマップに追加
+            for pixel_feature in sample_data['features']:
                 geom = pixel_feature.get('geometry', {})
                 props = pixel_feature.get('properties', {})
                 if not geom or not props:
@@ -260,12 +248,14 @@ for date_idx, date in enumerate(new_dates):
                 
                 lon, lat = geom['coordinates']
                 ndvi = props.get('NDVI')
+                ndwi = props.get('NDWI')
+                gndvi = props.get('GNDVI')
                 
                 half_size = PIXEL_SCALE / 2 / 111320
                 bounds = [[lat - half_size, lon - half_size], [lat + half_size, lon + half_size]]
                 
+                # NDVI ピクセル
                 ndvi_str = f"{ndvi:.3f}" if ndvi is not None and not np.isnan(ndvi) else 'N/A'
-                
                 folium.Rectangle(
                     bounds=bounds,
                     color=get_ndvi_color(ndvi),
@@ -276,6 +266,32 @@ for date_idx, date in enumerate(new_dates):
                     popup=f"<b>{address}</b><br>日付: {date}<br>NDVI: {ndvi_str}",
                     tooltip=f"{date}: NDVI {ndvi_str}"
                 ).add_to(layer_ndvi)
+                
+                # NDWI ピクセル
+                ndwi_str = f"{ndwi:.3f}" if ndwi is not None and not np.isnan(ndwi) else 'N/A'
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=get_ndwi_color(ndwi),
+                    fill=True,
+                    fillColor=get_ndwi_color(ndwi),
+                    fillOpacity=0.8,
+                    weight=0.5,
+                    popup=f"<b>{address}</b><br>日付: {date}<br>NDWI: {ndwi_str}",
+                    tooltip=f"{date}: NDWI {ndwi_str}"
+                ).add_to(layer_ndwi)
+                
+                # GNDVI ピクセル
+                gndvi_str = f"{gndvi:.3f}" if gndvi is not None and not np.isnan(gndvi) else 'N/A'
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=get_gndvi_color(gndvi),
+                    fill=True,
+                    fillColor=get_gndvi_color(gndvi),
+                    fillOpacity=0.8,
+                    weight=0.5,
+                    popup=f"<b>{address}</b><br>日付: {date}<br>GNDVI: {gndvi_str}",
+                    tooltip=f"{date}: GNDVI {gndvi_str}"
+                ).add_to(layer_gndvi)
             
             date_pixels += pixel_count
             print(f" {pixel_count}px")
@@ -288,11 +304,13 @@ for date_idx, date in enumerate(new_dates):
     for feature in fields_info['features']:
         if feature['geometry']['type'] == 'Polygon':
             coords_poly = [[lat, lon] for lon, lat in feature['geometry']['coordinates'][0]]
-            folium.Polygon(coords_poly, color='#000000', weight=2, fill=False).add_to(layer_lai)
             folium.Polygon(coords_poly, color='#000000', weight=2, fill=False).add_to(layer_ndvi)
+            folium.Polygon(coords_poly, color='#000000', weight=2, fill=False).add_to(layer_ndwi)
+            folium.Polygon(coords_poly, color='#000000', weight=2, fill=False).add_to(layer_gndvi)
     
-    layer_lai.add_to(m_lai)
     layer_ndvi.add_to(m_ndvi)
+    layer_ndwi.add_to(m_ndwi)
+    layer_gndvi.add_to(m_gndvi)
     
     history['dates'].append(date)
     history['pixel_counts'][date] = date_pixels
@@ -300,8 +318,9 @@ for date_idx, date in enumerate(new_dates):
     print(f"  ✓ {date}: {date_pixels}ピクセル")
 
 # ===== LayerControl追加 =====
-folium.LayerControl(position='topright', collapsed=False).add_to(m_lai)
 folium.LayerControl(position='topright', collapsed=False).add_to(m_ndvi)
+folium.LayerControl(position='topright', collapsed=False).add_to(m_ndwi)
+folium.LayerControl(position='topright', collapsed=False).add_to(m_gndvi)
 
 # ===== レイヤー操作ボタン =====
 layer_control_script = '''
@@ -355,44 +374,13 @@ function adjustButtonPosition() {
 setInterval(adjustButtonPosition, 500);
 </script>
 '''
-m_lai.get_root().html.add_child(folium.Element(layer_control_script))
 m_ndvi.get_root().html.add_child(folium.Element(layer_control_script))
+m_ndwi.get_root().html.add_child(folium.Element(layer_control_script))
+m_gndvi.get_root().html.add_child(folium.Element(layer_control_script))
 
 # ===== タイトル =====
 all_dates = sorted(history['dates'])
 total_pixels = sum(history['pixel_counts'].values())
-
-title_lai = f'''
-<div id="map-title-lai" style="position: fixed; top: 10px; left: 10px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 2px solid white; z-index: 9999; padding: 10px;
-            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
-            max-width: calc(100vw - 20px); box-sizing: border-box;">
-    <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🌾 LAI ピクセルマップ</h3>
-    <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
-        📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
-        📍 {len(fields_info['features'])}筆 | 🔲 {total_pixels:,}px<br>
-        🆕 {new_dates[-1]} | ☁️ {CLOUD_THRESHOLD}%以下
-    </p>
-</div>
-<style>
-@media (max-width: 768px) {{
-    #map-title-lai {{
-        left: 5px !important;
-        top: 5px !important;
-        padding: 8px !important;
-        max-width: calc(100vw - 80px) !important;
-    }}
-    #map-title-lai h3 {{
-        font-size: 14px !important;
-    }}
-    #map-title-lai p {{
-        font-size: 10px !important;
-    }}
-}}
-</style>
-'''
-m_lai.get_root().html.add_child(folium.Element(title_lai))
 
 title_ndvi = f'''
 <div id="map-title-ndvi" style="position: fixed; top: 10px; left: 10px;
@@ -400,10 +388,10 @@ title_ndvi = f'''
             border: 2px solid white; z-index: 9999; padding: 10px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
             max-width: calc(100vw - 20px); box-sizing: border-box;">
-    <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🌾 NDVI ピクセルマップ</h3>
+    <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🌾 NDVI マップ（植生活性度）</h3>
     <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
         📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
-        📍 {len(fields_info['features'])}筆<br>
+        📍 {len(fields_info['features'])}筆 | 🔲 {total_pixels:,}px<br>
         🆕 {new_dates[-1]} | ☁️ {CLOUD_THRESHOLD}%以下
     </p>
 </div>
@@ -426,72 +414,91 @@ title_ndvi = f'''
 '''
 m_ndvi.get_root().html.add_child(folium.Element(title_ndvi))
 
+title_ndwi = f'''
+<div id="map-title-ndwi" style="position: fixed; top: 10px; left: 10px;
+            background: linear-gradient(135deg, #4169E1 0%, #87CEEB 100%);
+            border: 2px solid white; z-index: 9999; padding: 10px;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
+            max-width: calc(100vw - 20px); box-sizing: border-box;">
+    <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">💧 NDWI マップ（水分状態）</h3>
+    <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
+        📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
+        📍 {len(fields_info['features'])}筆 | 🔲 {total_pixels:,}px<br>
+        🆕 {new_dates[-1]} | ☁️ {CLOUD_THRESHOLD}%以下
+    </p>
+</div>
+<style>
+@media (max-width: 768px) {{
+    #map-title-ndwi {{
+        left: 5px !important;
+        top: 5px !important;
+        padding: 8px !important;
+        max-width: calc(100vw - 80px) !important;
+    }}
+    #map-title-ndwi h3 {{
+        font-size: 14px !important;
+    }}
+    #map-title-ndwi p {{
+        font-size: 10px !important;
+    }}
+}}
+</style>
+'''
+m_ndwi.get_root().html.add_child(folium.Element(title_ndwi))
+
+title_gndvi = f'''
+<div id="map-title-gndvi" style="position: fixed; top: 10px; left: 10px;
+            background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
+            border: 2px solid white; z-index: 9999; padding: 10px;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
+            max-width: calc(100vw - 20px); box-sizing: border-box;">
+    <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🍃 GNDVI マップ（クロロフィル）</h3>
+    <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
+        📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
+        📍 {len(fields_info['features'])}筆 | 🔲 {total_pixels:,}px<br>
+        🆕 {new_dates[-1]} | ☁️ {CLOUD_THRESHOLD}%以下
+    </p>
+</div>
+<style>
+@media (max-width: 768px) {{
+    #map-title-gndvi {{
+        left: 5px !important;
+        top: 5px !important;
+        padding: 8px !important;
+        max-width: calc(100vw - 80px) !important;
+    }}
+    #map-title-gndvi h3 {{
+        font-size: 14px !important;
+    }}
+    #map-title-gndvi p {{
+        font-size: 10px !important;
+    }}
+}}
+</style>
+'''
+m_gndvi.get_root().html.add_child(folium.Element(title_gndvi))
+
 # ===== 凡例 =====
-legend_html = '''
+legend_ndvi = '''
 <div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
             background-color: white; border: 2px solid #2c3e50; z-index: 9999;
             padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-<h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">LAI / NDVI</h4>
-<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#d73027; font-size: clamp(14px, 3.5vw, 20px);">■</span> 低</p>
-<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fc8d59; font-size: clamp(14px, 3.5vw, 20px);">■</span> やや低</p>
-<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fee08b; font-size: clamp(14px, 3.5vw, 20px);">■</span> 中</p>
-<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#91cf60; font-size: clamp(14px, 3.5vw, 20px);">■</span> 高</p>
-<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#1a9850; font-size: clamp(14px, 3.5vw, 20px);">■</span> 非常に高</p>
+<h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">NDVI（植生）</h4>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#d73027; font-size: clamp(14px, 3.5vw, 20px);">■</span> 低 (&lt;0.2)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fc8d59; font-size: clamp(14px, 3.5vw, 20px);">■</span> やや低 (0.2-0.4)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fee08b; font-size: clamp(14px, 3.5vw, 20px);">■</span> 中 (0.4-0.6)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#91cf60; font-size: clamp(14px, 3.5vw, 20px);">■</span> 高 (0.6-0.8)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#1a9850; font-size: clamp(14px, 3.5vw, 20px);">■</span> 非常に高 (&gt;0.8)</p>
 </div>
-<style>
-@media (max-width: 768px) {
-    #map-legend {
-        bottom: 5px !important;
-        right: 5px !important;
-        padding: 6px !important;
-        max-width: 120px !important;
-    }
-    #map-legend h4 {
-        font-size: 11px !important;
-        margin-bottom: 5px !important;
-    }
-    #map-legend p {
-        font-size: 9px !important;
-        margin: 2px 0 !important;
-    }
-    #map-legend span {
-        font-size: 14px !important;
-    }
-}
-</style>
 '''
-m_lai.get_root().html.add_child(folium.Element(legend_html))
-m_ndvi.get_root().html.add_child(folium.Element(legend_html))
 
-# ===== 保存 =====
-print("\n[8] マップ保存中...")
-
-map_lai_path = os.path.join(OUTPUT_DIR, 'index.html')  # GitHub Pagesのトップページ
-map_ndvi_path = os.path.join(OUTPUT_DIR, 'ndvi.html')
-
-m_lai.save(map_lai_path)
-m_ndvi.save(map_ndvi_path)
-
-print(f"  ✓ LAIマップ: {map_lai_path}")
-print(f"  ✓ NDVIマップ: {map_ndvi_path}")
-
-# ===== 履歴保存 =====
-with open(history_file, 'w', encoding='utf-8') as f:
-    json.dump(history, f, ensure_ascii=False, indent=2)
-print(f"  ✓ 履歴保存: {history_file}")
-
-# ===== 最終処理日更新 =====
-with open(STATE_FILE, 'w') as f:
-    f.write(new_dates[-1])
-print(f"  ✓ 最終処理日: {new_dates[-1]}")
-
-print("\n" + "="*70)
-print("✓ 自動更新完了！")
-print("="*70)
-print(f"\n新規追加: {len(new_dates)}日")
-print(f"総観測日数: {len(history['dates'])}日")
-print(f"総ピクセル数: {total_pixels:,}")
-print("\n追加された日付:")
-for date in new_dates:
-    print(f"  - {date} ({history['pixel_counts'][date]:,}ピクセル)")
-print("\n" + "="*70)
+legend_ndwi = '''
+<div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
+            background-color: white; border: 2px solid #2c3e50; z-index: 9999;
+            padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+<h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">NDWI（水分）</h4>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#8B4513; font-size: clamp(14px, 3.5vw, 20px);">■</span> 乾燥 (&lt;-0.3)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#D2691E; font-size: clamp(14px, 3.5vw, 20px);">■</span> やや乾燥 (-0.3~-0.1)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#F4A460; font-size: clamp(14px, 3.5vw, 20px);">■</span> 適度 (-0.1~0.1)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#87CEEB; font-size: clamp(14px, 3.5vw, 20px);">■</span> 湿潤 (0.1~0.3)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5v
