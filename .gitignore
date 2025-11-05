@@ -6,11 +6,11 @@ __pycache__/
 venv/
 .env
 
-# Ignore output files
+# Ignore output files (GitHub Pagesで別管理)
 output/
-*.html
-*.json
-*.xlsx
 
-# Ignore GEE private key
+# Ignore generated files (ワークフローが自動生成)
+last_processed.txt
+
+# Ignore GEE private key (秘密情報)
 private-key.json
