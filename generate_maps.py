@@ -439,25 +439,25 @@ legend_html = '''
 <p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#1a9850; font-size: clamp(14px, 3.5vw, 20px);">■</span> 非常に高</p>
 </div>
 <style>
-@media (max-width: 768px) {{
-    #map-legend {{
+@media (max-width: 768px) {
+    #map-legend {
         bottom: 5px !important;
         right: 5px !important;
         padding: 6px !important;
         max-width: 120px !important;
-    }}
-    #map-legend h4 {{
+    }
+    #map-legend h4 {
         font-size: 11px !important;
         margin-bottom: 5px !important;
-    }}
-    #map-legend p {{
+    }
+    #map-legend p {
         font-size: 9px !important;
         margin: 2px 0 !important;
-    }}
-    #map-legend span {{
+    }
+    #map-legend span {
         font-size: 14px !important;
-    }}
-}}
+    }
+}
 </style>
 '''
 m_lai.get_root().html.add_child(folium.Element(legend_html))
