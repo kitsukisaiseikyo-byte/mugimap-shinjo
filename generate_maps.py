@@ -313,11 +313,24 @@ layer_control_script = '''
     padding: 5px;
     border-radius: 8px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    font-size: 14px;
+    font-size: clamp(11px, 2.5vw, 14px);
 ">
-  <button onclick="selectAllLayers()" style="margin:2px;">全選択</button>
-  <button onclick="deselectAllLayers()" style="margin:2px;">全解除</button>
+  <button onclick="selectAllLayers()" style="margin:2px; padding: 4px 8px; font-size: clamp(10px, 2.5vw, 12px);">全選択</button>
+  <button onclick="deselectAllLayers()" style="margin:2px; padding: 4px 8px; font-size: clamp(10px, 2.5vw, 12px);">全解除</button>
 </div>
+
+<style>
+@media (max-width: 768px) {
+    #layerButtons {
+        right: 5px !important;
+        padding: 3px !important;
+    }
+    #layerButtons button {
+        padding: 3px 6px !important;
+        font-size: 10px !important;
+    }
+}
+</style>
 
 <script>
 function selectAllLayers() {
@@ -350,49 +363,102 @@ all_dates = sorted(history['dates'])
 total_pixels = sum(history['pixel_counts'].values())
 
 title_lai = f'''
-<div style="position: fixed; top: 10px; left: 50px; width: 600px;
+<div id="map-title-lai" style="position: fixed; top: 10px; left: 10px; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 3px solid white; z-index: 9999; padding: 15px;
-            border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;">
-    <h3 style="margin: 0; font-size: 20px;">🌾 LAI ピクセルマップ（自動更新版）</h3>
-    <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;">
-        📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日観測)<br>
-        📍 {len(fields_info['features'])}筆 | 🔲 総ピクセル数: {total_pixels:,}<br>
-        🆕 最新更新: {new_dates[-1]} | ☁️ 雲量{CLOUD_THRESHOLD}%以下<br>
-        右上のレイヤーで日付を選択
+            border: 2px solid white; z-index: 9999; padding: 10px;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
+            max-width: calc(100vw - 20px); box-sizing: border-box;">
+    <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🌾 LAI ピクセルマップ</h3>
+    <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
+        📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
+        📍 {len(fields_info['features'])}筆 | 🔲 {total_pixels:,}px<br>
+        🆕 {new_dates[-1]} | ☁️ {CLOUD_THRESHOLD}%以下
     </p>
 </div>
+<style>
+@media (max-width: 768px) {{
+    #map-title-lai {{
+        left: 5px !important;
+        top: 5px !important;
+        padding: 8px !important;
+        max-width: calc(100vw - 80px) !important;
+    }}
+    #map-title-lai h3 {{
+        font-size: 14px !important;
+    }}
+    #map-title-lai p {{
+        font-size: 10px !important;
+    }}
+}}
+</style>
 '''
 m_lai.get_root().html.add_child(folium.Element(title_lai))
 
 title_ndvi = f'''
-<div style="position: fixed; top: 10px; left: 50px; width: 600px;
+<div id="map-title-ndvi" style="position: fixed; top: 10px; left: 10px;
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            border: 3px solid white; z-index: 9999; padding: 15px;
-            border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;">
-    <h3 style="margin: 0; font-size: 20px;">🌾 NDVI ピクセルマップ（自動更新版）</h3>
-    <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;">
-        📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日観測)<br>
+            border: 2px solid white; z-index: 9999; padding: 10px;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
+            max-width: calc(100vw - 20px); box-sizing: border-box;">
+    <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🌾 NDVI ピクセルマップ</h3>
+    <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
+        📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
         📍 {len(fields_info['features'])}筆<br>
-        🆕 最新更新: {new_dates[-1]} | ☁️ 雲量{CLOUD_THRESHOLD}%以下<br>
-        右上のレイヤーで日付を選択
+        🆕 {new_dates[-1]} | ☁️ {CLOUD_THRESHOLD}%以下
     </p>
 </div>
+<style>
+@media (max-width: 768px) {{
+    #map-title-ndvi {{
+        left: 5px !important;
+        top: 5px !important;
+        padding: 8px !important;
+        max-width: calc(100vw - 80px) !important;
+    }}
+    #map-title-ndvi h3 {{
+        font-size: 14px !important;
+    }}
+    #map-title-ndvi p {{
+        font-size: 10px !important;
+    }}
+}}
+</style>
 '''
 m_ndvi.get_root().html.add_child(folium.Element(title_ndvi))
 
 # ===== 凡例 =====
 legend_html = '''
-<div style="position: fixed; bottom: 50px; right: 50px; width: 200px;
-            background-color: white; border: 3px solid #2c3e50; z-index: 9999;
-            padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-<h4 style="margin:0 0 10px 0; border-bottom:2px solid #3498db; padding-bottom:5px;">LAI / NDVI</h4>
-<p style="margin:5px 0;"><span style="color:#d73027; font-size:20px;">■</span> 低</p>
-<p style="margin:5px 0;"><span style="color:#fc8d59; font-size:20px;">■</span> やや低</p>
-<p style="margin:5px 0;"><span style="color:#fee08b; font-size:20px;">■</span> 中</p>
-<p style="margin:5px 0;"><span style="color:#91cf60; font-size:20px;">■</span> 高</p>
-<p style="margin:5px 0;"><span style="color:#1a9850; font-size:20px;">■</span> 非常に高</p>
+<div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
+            background-color: white; border: 2px solid #2c3e50; z-index: 9999;
+            padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+<h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">LAI / NDVI</h4>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#d73027; font-size: clamp(14px, 3.5vw, 20px);">■</span> 低</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fc8d59; font-size: clamp(14px, 3.5vw, 20px);">■</span> やや低</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fee08b; font-size: clamp(14px, 3.5vw, 20px);">■</span> 中</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#91cf60; font-size: clamp(14px, 3.5vw, 20px);">■</span> 高</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#1a9850; font-size: clamp(14px, 3.5vw, 20px);">■</span> 非常に高</p>
 </div>
+<style>
+@media (max-width: 768px) {{
+    #map-legend {{
+        bottom: 5px !important;
+        right: 5px !important;
+        padding: 6px !important;
+        max-width: 120px !important;
+    }}
+    #map-legend h4 {{
+        font-size: 11px !important;
+        margin-bottom: 5px !important;
+    }}
+    #map-legend p {{
+        font-size: 9px !important;
+        margin: 2px 0 !important;
+    }}
+    #map-legend span {{
+        font-size: 14px !important;
+    }}
+}}
+</style>
 '''
 m_lai.get_root().html.add_child(folium.Element(legend_html))
 m_ndvi.get_root().html.add_child(folium.Element(legend_html))
