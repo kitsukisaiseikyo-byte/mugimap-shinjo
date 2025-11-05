@@ -1,11 +1,9 @@
-name: 麦生育マップ自動更新
-
+name: 麦生育マップ自動更新 (NDVI/NDWI/GNDVI)
 on:
   schedule:
     # 毎日午前2時(JST 11時)に実行
     - cron: '0 2 * * *'
   workflow_dispatch: # 手動実行も可能
-
 permissions:
   contents: write
   
@@ -49,7 +47,7 @@ jobs:
           echo "date=2024-12-01" >> $GITHUB_OUTPUT
         fi
         
-    - name: 新規画像チェック&マップ生成
+    - name: 新規画像チェック&マップ生成 (NDVI/NDWI/GNDVI)
       run: |
         python generate_maps.py --last-date ${{ steps.last_date.outputs.date }}
         
@@ -67,9 +65,9 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        rm -f private-key.json   # ←この行を追加！
+        rm -f private-key.json
         git add .
-        git commit -m "🌾 麦生育マップ自動更新 $(date +'%Y-%m-%d %H:%M')"
+        git commit -m "🌾 麦生育マップ自動更新 (NDVI/NDWI/GNDVI) $(date +'%Y-%m-%d %H:%M')"
         git push
         
     - name: GitHub Pagesにデプロイ
@@ -83,5 +81,9 @@ jobs:
     - name: 通知 (オプション)
       if: steps.check_changes.outputs.changed == 'true'
       run: |
-        echo "新しい画像が処理されました！"
-        echo "マップURL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        echo "✅ 新しい画像が処理されました！"
+        echo "📊 生成されたマップ:"
+        echo "  - NDVI (植生): index.html"
+        echo "  - NDWI (水分): ndwi.html"
+        echo "  - GNDVI (クロロフィル): gndvi.html"
+        echo "🌐 マップURL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
