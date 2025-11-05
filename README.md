@@ -5,8 +5,8 @@
    Sentinel-2衛星画像を使った麦生育モニタリング
    
    ## 📊 マップを見る
-   - [LAIマップ](https://kitsukisaiseikyo-byte.github.io/wheat-monitoring/)
-   - [NDVIマップ](https://kitsukisaiseikyo-byte.github.io/wheat-monitoring/ndvi.html)
+   - [LAIマップ](https://kitsukisaiseikyo-byte.github.io/mugimap-shinjo/)
+   - [NDVIマップ](https://kitsukisaiseikyo-byte.github.io/mugimap-shinjo/ndvi.html)
    
    ## 🔄 更新頻度
    毎日午前2時に自動チェック（雲量20%以下の新規画像がある場合のみ更新）
