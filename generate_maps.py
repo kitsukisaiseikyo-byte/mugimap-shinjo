@@ -378,6 +378,36 @@ m_ndvi.get_root().html.add_child(folium.Element(layer_control_script))
 m_ndwi.get_root().html.add_child(folium.Element(layer_control_script))
 m_gndvi.get_root().html.add_child(folium.Element(layer_control_script))
 
+# ===== ナビゲーションメニュー =====
+nav_menu = '''
+<div style="position: fixed; top: 10px; right: 10px; z-index: 10000; 
+            background: white; padding: 8px; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+    <div style="font-weight: bold; margin-bottom: 5px; font-size: 12px;">マップ切替</div>
+    <a href="index.html" style="display: block; padding: 4px 8px; margin: 2px 0; 
+       background: #11998e; color: white; text-decoration: none; border-radius: 4px; 
+       font-size: 11px; text-align: center;">🌾 NDVI</a>
+    <a href="ndwi.html" style="display: block; padding: 4px 8px; margin: 2px 0; 
+       background: #4169E1; color: white; text-decoration: none; border-radius: 4px; 
+       font-size: 11px; text-align: center;">💧 NDWI</a>
+    <a href="gndvi.html" style="display: block; padding: 4px 8px; margin: 2px 0; 
+       background: #228B22; color: white; text-decoration: none; border-radius: 4px; 
+       font-size: 11px; text-align: center;">🍃 GNDVI</a>
+</div>
+<style>
+@media (max-width: 768px) {
+    div[style*="top: 10px; right: 10px"] {
+        top: 5px !important;
+        right: 5px !important;
+        padding: 5px !important;
+    }
+}
+</style>
+'''
+m_ndvi.get_root().html.add_child(folium.Element(nav_menu))
+m_ndwi.get_root().html.add_child(folium.Element(nav_menu))
+m_gndvi.get_root().html.add_child(folium.Element(nav_menu))
+
 # ===== タイトル =====
 all_dates = sorted(history['dates'])
 total_pixels = sum(history['pixel_counts'].values())
@@ -387,7 +417,7 @@ title_ndvi = f'''
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
             border: 2px solid white; z-index: 9999; padding: 10px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
-            max-width: calc(100vw - 20px); box-sizing: border-box;">
+            max-width: calc(100vw - 140px); box-sizing: border-box;">
     <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🌾 NDVI マップ（植生活性度）</h3>
     <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
         📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
@@ -404,10 +434,10 @@ title_ndvi = f'''
         max-width: calc(100vw - 80px) !important;
     }}
     #map-title-ndvi h3 {{
-        font-size: 14px !important;
+        font-size: 12px !important;
     }}
     #map-title-ndvi p {{
-        font-size: 10px !important;
+        font-size: 9px !important;
     }}
 }}
 </style>
@@ -419,7 +449,7 @@ title_ndwi = f'''
             background: linear-gradient(135deg, #4169E1 0%, #87CEEB 100%);
             border: 2px solid white; z-index: 9999; padding: 10px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
-            max-width: calc(100vw - 20px); box-sizing: border-box;">
+            max-width: calc(100vw - 140px); box-sizing: border-box;">
     <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">💧 NDWI マップ（水分状態）</h3>
     <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
         📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
@@ -436,10 +466,10 @@ title_ndwi = f'''
         max-width: calc(100vw - 80px) !important;
     }}
     #map-title-ndwi h3 {{
-        font-size: 14px !important;
+        font-size: 12px !important;
     }}
     #map-title-ndwi p {{
-        font-size: 10px !important;
+        font-size: 9px !important;
     }}
 }}
 </style>
@@ -451,7 +481,7 @@ title_gndvi = f'''
             background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
             border: 2px solid white; z-index: 9999; padding: 10px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
-            max-width: calc(100vw - 20px); box-sizing: border-box;">
+            max-width: calc(100vw - 140px); box-sizing: border-box;">
     <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🍃 GNDVI マップ（クロロフィル）</h3>
     <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
         📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
@@ -468,10 +498,10 @@ title_gndvi = f'''
         max-width: calc(100vw - 80px) !important;
     }}
     #map-title-gndvi h3 {{
-        font-size: 14px !important;
+        font-size: 12px !important;
     }}
     #map-title-gndvi p {{
-        font-size: 10px !important;
+        font-size: 9px !important;
     }}
 }}
 </style>
@@ -490,7 +520,29 @@ legend_ndvi = '''
 <p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#91cf60; font-size: clamp(14px, 3.5vw, 20px);">■</span> 高 (0.6-0.8)</p>
 <p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#1a9850; font-size: clamp(14px, 3.5vw, 20px);">■</span> 非常に高 (&gt;0.8)</p>
 </div>
+<style>
+@media (max-width: 768px) {
+    #map-legend {
+        bottom: 5px !important;
+        right: 5px !important;
+        padding: 6px !important;
+        max-width: 120px !important;
+    }
+    #map-legend h4 {
+        font-size: 11px !important;
+        margin-bottom: 5px !important;
+    }
+    #map-legend p {
+        font-size: 9px !important;
+        margin: 2px 0 !important;
+    }
+    #map-legend span {
+        font-size: 14px !important;
+    }
+}
+</style>
 '''
+m_ndvi.get_root().html.add_child(folium.Element(legend_ndvi))
 
 legend_ndwi = '''
 <div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
@@ -501,4 +553,103 @@ legend_ndwi = '''
 <p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#D2691E; font-size: clamp(14px, 3.5vw, 20px);">■</span> やや乾燥 (-0.3~-0.1)</p>
 <p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#F4A460; font-size: clamp(14px, 3.5vw, 20px);">■</span> 適度 (-0.1~0.1)</p>
 <p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#87CEEB; font-size: clamp(14px, 3.5vw, 20px);">■</span> 湿潤 (0.1~0.3)</p>
-<p style="margin:3px 0; font-size: clamp(10px, 2.5v
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#4169E1; font-size: clamp(14px, 3.5vw, 20px);">■</span> 多湿 (&gt;0.3)</p>
+</div>
+<style>
+@media (max-width: 768px) {
+    #map-legend {
+        bottom: 5px !important;
+        right: 5px !important;
+        padding: 6px !important;
+        max-width: 120px !important;
+    }
+    #map-legend h4 {
+        font-size: 11px !important;
+        margin-bottom: 5px !important;
+    }
+    #map-legend p {
+        font-size: 9px !important;
+        margin: 2px 0 !important;
+    }
+    #map-legend span {
+        font-size: 14px !important;
+    }
+}
+</style>
+'''
+m_ndwi.get_root().html.add_child(folium.Element(legend_ndwi))
+
+legend_gndvi = '''
+<div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
+            background-color: white; border: 2px solid #2c3e50; z-index: 9999;
+            padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+<h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">GNDVI（クロロフィル）</h4>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#FFFF00; font-size: clamp(14px, 3.5vw, 20px);">■</span> 低 (&lt;0.2)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#9ACD32; font-size: clamp(14px, 3.5vw, 20px);">■</span> やや低 (0.2-0.4)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#32CD32; font-size: clamp(14px, 3.5vw, 20px);">■</span> 中 (0.4-0.6)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#228B22; font-size: clamp(14px, 3.5vw, 20px);">■</span> 高 (0.6-0.8)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#006400; font-size: clamp(14px, 3.5vw, 20px);">■</span> 非常に高 (&gt;0.8)</p>
+</div>
+<style>
+@media (max-width: 768px) {
+    #map-legend {
+        bottom: 5px !important;
+        right: 5px !important;
+        padding: 6px !important;
+        max-width: 120px !important;
+    }
+    #map-legend h4 {
+        font-size: 11px !important;
+        margin-bottom: 5px !important;
+    }
+    #map-legend p {
+        font-size: 9px !important;
+        margin: 2px 0 !important;
+    }
+    #map-legend span {
+        font-size: 14px !important;
+    }
+}
+</style>
+'''
+m_gndvi.get_root().html.add_child(folium.Element(legend_gndvi))
+
+# ===== 保存 =====
+print("\n[8] マップ保存中...")
+
+map_ndvi_path = os.path.join(OUTPUT_DIR, 'index.html')  # GitHub Pagesのトップページ
+map_ndwi_path = os.path.join(OUTPUT_DIR, 'ndwi.html')
+map_gndvi_path = os.path.join(OUTPUT_DIR, 'gndvi.html')
+
+m_ndvi.save(map_ndvi_path)
+m_ndwi.save(map_ndwi_path)
+m_gndvi.save(map_gndvi_path)
+
+print(f"  ✓ NDVIマップ: {map_ndvi_path}")
+print(f"  ✓ NDWIマップ: {map_ndwi_path}")
+print(f"  ✓ GNDVIマップ: {map_gndvi_path}")
+
+# ===== 履歴保存 =====
+with open(history_file, 'w', encoding='utf-8') as f:
+    json.dump(history, f, ensure_ascii=False, indent=2)
+print(f"  ✓ 履歴保存: {history_file}")
+
+# ===== 最終処理日更新 =====
+with open(STATE_FILE, 'w') as f:
+    f.write(new_dates[-1])
+print(f"  ✓ 最終処理日: {new_dates[-1]}")
+
+print("\n" + "="*70)
+print("✓ 自動更新完了！")
+print("="*70)
+print(f"\n新規追加: {len(new_dates)}日")
+print(f"総観測日数: {len(history['dates'])}日")
+print(f"総ピクセル数: {total_pixels:,}")
+print("\n追加された日付:")
+for date in new_dates:
+    print(f"  - {date} ({history['pixel_counts'][date]:,}ピクセル)")
+print("\n生成されたマップ:")
+print(f"  - NDVI (植生活性度): index.html")
+print(f"  - NDWI (水分状態): ndwi.html")
+print(f"  - GNDVI (クロロフィル): gndvi.html")
+print("\n" + "="*70)
