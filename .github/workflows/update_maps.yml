@@ -67,6 +67,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        rm -f private-key.json   # ←この行を追加！
         git add .
         git commit -m "🌾 麦生育マップ自動更新 $(date +'%Y-%m-%d %H:%M')"
         git push
