@@ -6,8 +6,8 @@ __pycache__/
 venv/
 .env
 
-# Ignore output files (GitHub Pagesで別管理)
-output/
+# Ignore HTML files (GitHub Pagesで別管理)
+output/*.html
 
 # Ignore generated files (ワークフローが自動生成)
 last_processed.txt
