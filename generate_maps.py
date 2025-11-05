@@ -322,31 +322,53 @@ folium.LayerControl(position='topright', collapsed=False).add_to(m_ndvi)
 folium.LayerControl(position='topright', collapsed=False).add_to(m_ndwi)
 folium.LayerControl(position='topright', collapsed=False).add_to(m_gndvi)
 
-# ===== レイヤー操作ボタン =====
+# ===== レイヤー操作ボタン（右下に配置） =====
 layer_control_script = '''
 <div id="layerButtons" style="
     position: fixed;
+    bottom: 10px;
     right: 10px;
     z-index: 1000;
     background: white;
-    padding: 5px;
+    padding: 8px;
     border-radius: 8px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    font-size: clamp(11px, 2.5vw, 14px);
 ">
-  <button onclick="selectAllLayers()" style="margin:2px; padding: 4px 8px; font-size: clamp(10px, 2.5vw, 12px);">全選択</button>
-  <button onclick="deselectAllLayers()" style="margin:2px; padding: 4px 8px; font-size: clamp(10px, 2.5vw, 12px);">全解除</button>
+  <button onclick="selectAllLayers()" style="
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  ">全選択</button>
+  <button onclick="deselectAllLayers()" style="
+    display: block;
+    width: 100%;
+    padding: 6px 12px;
+    font-size: 13px;
+    background: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  ">全解除</button>
 </div>
 
 <style>
 @media (max-width: 768px) {
     #layerButtons {
+        bottom: 5px !important;
         right: 5px !important;
-        padding: 3px !important;
+        padding: 6px !important;
     }
     #layerButtons button {
-        padding: 3px 6px !important;
-        font-size: 10px !important;
+        padding: 5px 10px !important;
+        font-size: 11px !important;
     }
 }
 </style>
@@ -362,51 +384,13 @@ function deselectAllLayers() {
     if (cb.checked) cb.click();
   });
 }
-
-function adjustButtonPosition() {
-  const ctrl = document.querySelector('.leaflet-control-layers');
-  const btns = document.getElementById('layerButtons');
-  if (ctrl && btns) {
-    const rect = ctrl.getBoundingClientRect();
-    btns.style.top = (rect.bottom + 8) + 'px';
-  }
-}
-setInterval(adjustButtonPosition, 500);
 </script>
 '''
 m_ndvi.get_root().html.add_child(folium.Element(layer_control_script))
 m_ndwi.get_root().html.add_child(folium.Element(layer_control_script))
 m_gndvi.get_root().html.add_child(folium.Element(layer_control_script))
 
-# ===== ナビゲーションメニュー =====
-nav_menu = '''
-<div style="position: fixed; top: 10px; right: 10px; z-index: 10000; 
-            background: white; padding: 8px; border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-    <div style="font-weight: bold; margin-bottom: 5px; font-size: 12px;">マップ切替</div>
-    <a href="index.html" style="display: block; padding: 4px 8px; margin: 2px 0; 
-       background: #11998e; color: white; text-decoration: none; border-radius: 4px; 
-       font-size: 11px; text-align: center;">🌾 NDVI</a>
-    <a href="ndwi.html" style="display: block; padding: 4px 8px; margin: 2px 0; 
-       background: #4169E1; color: white; text-decoration: none; border-radius: 4px; 
-       font-size: 11px; text-align: center;">💧 NDWI</a>
-    <a href="gndvi.html" style="display: block; padding: 4px 8px; margin: 2px 0; 
-       background: #228B22; color: white; text-decoration: none; border-radius: 4px; 
-       font-size: 11px; text-align: center;">🍃 GNDVI</a>
-</div>
-<style>
-@media (max-width: 768px) {
-    div[style*="top: 10px; right: 10px"] {
-        top: 5px !important;
-        right: 5px !important;
-        padding: 5px !important;
-    }
-}
-</style>
-'''
-m_ndvi.get_root().html.add_child(folium.Element(nav_menu))
-m_ndwi.get_root().html.add_child(folium.Element(nav_menu))
-m_gndvi.get_root().html.add_child(folium.Element(nav_menu))
+# ナビゲーションメニューは削除（不要）
 
 # ===== タイトル =====
 all_dates = sorted(history['dates'])
@@ -417,7 +401,7 @@ title_ndvi = f'''
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
             border: 2px solid white; z-index: 9999; padding: 10px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
-            max-width: calc(100vw - 140px); box-sizing: border-box;">
+            max-width: calc(100vw - 20px); box-sizing: border-box;">
     <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🌾 NDVI マップ（植生活性度）</h3>
     <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
         📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
@@ -431,7 +415,7 @@ title_ndvi = f'''
         left: 5px !important;
         top: 5px !important;
         padding: 8px !important;
-        max-width: calc(100vw - 80px) !important;
+        max-width: calc(100vw - 10px) !important;
     }}
     #map-title-ndvi h3 {{
         font-size: 12px !important;
@@ -449,7 +433,7 @@ title_ndwi = f'''
             background: linear-gradient(135deg, #4169E1 0%, #87CEEB 100%);
             border: 2px solid white; z-index: 9999; padding: 10px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
-            max-width: calc(100vw - 140px); box-sizing: border-box;">
+            max-width: calc(100vw - 20px); box-sizing: border-box;">
     <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">💧 NDWI マップ（水分状態）</h3>
     <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
         📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
@@ -463,7 +447,7 @@ title_ndwi = f'''
         left: 5px !important;
         top: 5px !important;
         padding: 8px !important;
-        max-width: calc(100vw - 80px) !important;
+        max-width: calc(100vw - 10px) !important;
     }}
     #map-title-ndwi h3 {{
         font-size: 12px !important;
@@ -481,7 +465,7 @@ title_gndvi = f'''
             background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
             border: 2px solid white; z-index: 9999; padding: 10px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white;
-            max-width: calc(100vw - 140px); box-sizing: border-box;">
+            max-width: calc(100vw - 20px); box-sizing: border-box;">
     <h3 style="margin: 0; font-size: clamp(14px, 4vw, 20px);">🍃 GNDVI マップ（クロロフィル）</h3>
     <p style="margin: 5px 0 0 0; font-size: clamp(10px, 2.5vw, 13px); opacity: 0.9; line-height: 1.4;">
         📅 {all_dates[0]} 〜 {all_dates[-1]} ({len(all_dates)}日)<br>
@@ -495,7 +479,7 @@ title_gndvi = f'''
         left: 5px !important;
         top: 5px !important;
         padding: 8px !important;
-        max-width: calc(100vw - 80px) !important;
+        max-width: calc(100vw - 10px) !important;
     }}
     #map-title-gndvi h3 {{
         font-size: 12px !important;
