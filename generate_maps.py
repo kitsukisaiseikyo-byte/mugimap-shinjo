@@ -494,7 +494,7 @@ m_gndvi.get_root().html.add_child(folium.Element(title_gndvi))
 
 # ===== 凡例 =====
 legend_ndvi = '''
-<div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
+<div id="map-legend" style="position: fixed; bottom: 10px; left: 10px;
             background-color: white; border: 2px solid #2c3e50; z-index: 9999;
             padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
 <h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">NDVI（植生）</h4>
@@ -508,7 +508,7 @@ legend_ndvi = '''
 @media (max-width: 768px) {
     #map-legend {
         bottom: 5px !important;
-        right: 5px !important;
+        left: 5px !important;
         padding: 6px !important;
         max-width: 120px !important;
     }
@@ -526,10 +526,43 @@ legend_ndvi = '''
 }
 </style>
 '''
+legend_ndvi = '''
+<div id="map-legend" style="position: fixed; bottom: 10px; left: 10px;
+            background-color: white; border: 2px solid #2c3e50; z-index: 9999;
+            padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+<h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">NDVI（植生）</h4>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#d73027; font-size: clamp(14px, 3.5vw, 20px);">■</span> 低 (&lt;0.2)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fc8d59; font-size: clamp(14px, 3.5vw, 20px);">■</span> やや低 (0.2-0.4)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#fee08b; font-size: clamp(14px, 3.5vw, 20px);">■</span> 中 (0.4-0.6)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#91cf60; font-size: clamp(14px, 3.5vw, 20px);">■</span> 高 (0.6-0.8)</p>
+<p style="margin:3px 0; font-size: clamp(10px, 2.5vw, 14px);"><span style="color:#1a9850; font-size: clamp(14px, 3.5vw, 20px);">■</span> 非常に高 (&gt;0.8)</p>
+</div>
+<style>
+@media (max-width: 768px) {
+    #map-legend {
+        bottom: 5px !important;
+        left: 5px !important;
+        padding: 6px !important;
+        max-width: 110px !important;
+    }
+    #map-legend h4 {
+        font-size: 10px !important;
+        margin-bottom: 4px !important;
+    }
+    #map-legend p {
+        font-size: 8px !important;
+        margin: 1px 0 !important;
+    }
+    #map-legend span {
+        font-size: 12px !important;
+    }
+}
+</style>
+'''
 m_ndvi.get_root().html.add_child(folium.Element(legend_ndvi))
 
 legend_ndwi = '''
-<div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
+<div id="map-legend" style="position: fixed; bottom: 10px; left: 10px;
             background-color: white; border: 2px solid #2c3e50; z-index: 9999;
             padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
 <h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">NDWI（水分）</h4>
@@ -543,20 +576,20 @@ legend_ndwi = '''
 @media (max-width: 768px) {
     #map-legend {
         bottom: 5px !important;
-        right: 5px !important;
+        left: 5px !important;
         padding: 6px !important;
-        max-width: 120px !important;
+        max-width: 110px !important;
     }
     #map-legend h4 {
-        font-size: 11px !important;
-        margin-bottom: 5px !important;
+        font-size: 10px !important;
+        margin-bottom: 4px !important;
     }
     #map-legend p {
-        font-size: 9px !important;
-        margin: 2px 0 !important;
+        font-size: 8px !important;
+        margin: 1px 0 !important;
     }
     #map-legend span {
-        font-size: 14px !important;
+        font-size: 12px !important;
     }
 }
 </style>
@@ -564,7 +597,7 @@ legend_ndwi = '''
 m_ndwi.get_root().html.add_child(folium.Element(legend_ndwi))
 
 legend_gndvi = '''
-<div id="map-legend" style="position: fixed; bottom: 10px; right: 10px;
+<div id="map-legend" style="position: fixed; bottom: 10px; left: 10px;
             background-color: white; border: 2px solid #2c3e50; z-index: 9999;
             padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
 <h4 style="margin:0 0 8px 0; border-bottom:2px solid #3498db; padding-bottom:3px; font-size: clamp(12px, 3vw, 16px);">GNDVI（クロロフィル）</h4>
@@ -578,20 +611,20 @@ legend_gndvi = '''
 @media (max-width: 768px) {
     #map-legend {
         bottom: 5px !important;
-        right: 5px !important;
+        left: 5px !important;
         padding: 6px !important;
-        max-width: 120px !important;
+        max-width: 110px !important;
     }
     #map-legend h4 {
-        font-size: 11px !important;
-        margin-bottom: 5px !important;
+        font-size: 10px !important;
+        margin-bottom: 4px !important;
     }
     #map-legend p {
-        font-size: 9px !important;
-        margin: 2px 0 !important;
+        font-size: 8px !important;
+        margin: 1px 0 !important;
     }
     #map-legend span {
-        font-size: 14px !important;
+        font-size: 12px !important;
     }
 }
 </style>
