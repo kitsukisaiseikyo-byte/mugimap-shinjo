@@ -14,3 +14,8 @@ last_processed.txt
 
 # Ignore GEE private key (秘密情報)
 private-key.json
+
+# Keep cache directory but track its contents
+# キャッシュファイルはGitで管理する（過去データの保持のため）
+!output/cache/
+!output/cache/*.json
