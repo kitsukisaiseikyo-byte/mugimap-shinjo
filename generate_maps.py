@@ -45,7 +45,7 @@ STATE_FILE = 'last_processed.txt'
 START_DATE = '2024-12-01'
 END_DATE = dt.datetime.now().strftime('%Y-%m-%d')
 PIXEL_SCALE = 10
-CLOUD_THRESHOLD = 20
+CLOUD_THRESHOLD = 50
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
