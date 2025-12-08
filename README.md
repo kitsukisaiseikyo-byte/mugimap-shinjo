@@ -1,6 +1,6 @@
 # 🌾 麦生育マップ自動更新システム
 
-※現在、容量不足のため更新ができていません。12/5
+※現在、容量不足のため最新の更新は新たなページに移動しました。（migimap-shinjo2026:https://github.com/kitsukisaiseikyo-byte/mugimap-shinjo2026)
 
 Sentinel-2衛星画像を使った麦生育モニタリングシステム
 
