@@ -1,6 +1,6 @@
 # 🌾 麦生育マップ自動更新システム(24/12/1~25/11/16までのデータ)
 
-※現在、容量不足のため最新の更新は新たなページに移動しました。
+※容量不足のため新ページに移動しました。
 
 （mugimap-shinjo2026:https://github.com/kitsukisaiseikyo-byte/mugimap-shinjo2026)
 
